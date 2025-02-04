@@ -2,7 +2,7 @@ name: Trigger Action to run check update data python script
 
 on:
   schedule:
-    - cron: 45 23 4,20 * * # every 10th and 20th of each month
+    - cron: 50 23 4,20 * * # every 10th and 20th of each month
 
 jobs:
   run-python-check-update:
