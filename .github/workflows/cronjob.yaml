@@ -1,8 +1,11 @@
 name: Trigger Action to run check update data python script
-
+# Objectif:check the last updated data from https://www.data.gouv.fr/fr/datasets/resultats-du-controle-sanitaire-de-leau-distribuee-commune-par-commune/#/resources
+# we check if the year existed in the config, 
+# if it existed, we just call the update script
+# if not, we need to check the last last config info of 2025
 on:
   schedule:
-    - cron: 50 23 4,20 * * # every 10th and 20th of each month
+    - cron: 50 23 4,28 * *  
 
 jobs:
   run-python-check-update:
