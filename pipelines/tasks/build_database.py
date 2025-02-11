@@ -22,6 +22,8 @@ import requests
 
 from ._common import CACHE_FOLDER, DUCKDB_FILE, clear_cache
 from ._config_edc import create_edc_yearly_filename, get_edc_config
+from tqdm import tqdm
+
 
 logger = logging.getLogger(__name__)
 edc_config = get_edc_config()
@@ -63,49 +65,67 @@ def download_extract_insert_yearly_edc_data(year: str):
     FILES = edc_config["files"]
 
     logger.info(f"Processing EDC dataset for {year}...")
+    
     response = requests.get(DATA_URL, stream=True)
+    response_size = int(response.headers.get('content-length', 0))
+    # common style for the progressbar dans cli
+    tqdm_common = {
+        'ncols': 100,
+        'bar_format':'{l_bar}{bar}| {n_fmt}/{total_fmt}',
+    }
+
+    # Open the ZIP file for writing
     with open(ZIP_FILE, "wb") as f:
-        for chunk in response.iter_content(chunk_size=8192):
-            f.write(chunk)
+        with tqdm(total=response_size, unit='B', unit_scale=True, desc="Processing", **tqdm_common ) as pbar:
+            for chunk in response.iter_content(chunk_size=8192):
+                f.write(chunk)
+                pbar.update(len(chunk))
 
     logger.info("   Extracting files...")
-    with ZipFile(ZIP_FILE, "r") as zip_ref:
-        zip_ref.extractall(EXTRACT_FOLDER)
+    with ZipFile(ZIP_FILE, 'r') as zip_ref:
+        file_list = zip_ref.namelist()
+        with tqdm(total=len(file_list), unit='file',desc="Extracting", **tqdm_common) as pbar:
+            for file in file_list:
+                zip_ref.extract(file, EXTRACT_FOLDER)  # Extract each file
+                pbar.update(1) 
 
     logger.info("   Creating or updating tables in the database...")
     conn = duckdb.connect(DUCKDB_FILE)
 
-    for file_info in FILES.values():
-        filepath = os.path.join(
-            EXTRACT_FOLDER,
-            create_edc_yearly_filename(
-                file_name_prefix=file_info["file_name_prefix"],
-                file_extension=file_info["file_extension"],
-                year=year,
-            ),
-        )
+    total_operations = len(FILES) 
+    with tqdm(total=total_operations, unit="operation", desc="Handling", **tqdm_common) as pbar:
+        for file_info in FILES.values():
+            filepath = os.path.join(
+                EXTRACT_FOLDER,
+                create_edc_yearly_filename(
+                    file_name_prefix=file_info["file_name_prefix"],
+                    file_extension=file_info["file_extension"],
+                    year=year,
+                ),
+            )
 
-        if check_table_existence(conn=conn, table_name=f"{file_info['table_name']}"):
-            query = f"""
-                DELETE FROM {f"{file_info['table_name']}"}
-                WHERE de_partition = CAST({year} as INTEGER)
-                ;
+            if check_table_existence(conn=conn, table_name=f"{file_info['table_name']}"):
+                query = f"""
+                    DELETE FROM {f"{file_info['table_name']}"}
+                    WHERE de_partition = CAST({year} as INTEGER)
+                    ;
+                """
+                conn.execute(query)
+                query_start = f"INSERT INTO {f'{file_info["table_name"]}'} "
+
+            else:
+                query_start = f"CREATE TABLE {f'{file_info["table_name"]}'} AS "
+
+            query_select = f"""
+                SELECT 
+                    *,
+                    CAST({year} AS INTEGER) AS de_partition,
+                    current_date            AS de_ingestion_date
+                FROM read_csv('{filepath}', header=true, delim=',');
             """
-            conn.execute(query)
-            query_start = f"INSERT INTO {f'{file_info["table_name"]}'} "
 
-        else:
-            query_start = f"CREATE TABLE {f'{file_info["table_name"]}'} AS "
-
-        query_select = f"""
-            SELECT 
-                *,
-                CAST({year} AS INTEGER) AS de_partition,
-                current_date            AS de_ingestion_date
-            FROM read_csv('{filepath}', header=true, delim=',');
-        """
-
-        conn.execute(query_start + query_select)
+            conn.execute(query_start + query_select)
+            pbar.update(1)
 
     conn.close()
 
