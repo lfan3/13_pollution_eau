@@ -1869,7 +1869,7 @@ requires-dist = [
     { name = "pandas", specifier = ">=2.2.3,<3" },
     { name = "python-dotenv", specifier = ">=1.0.1,<2" },
     { name = "requests", specifier = ">=2.32.3,<3" },
-    { name = "tqdm", specifier = ">=4.67.1" },
+    { name = "tqdm", specifier = ">=4.67.1,<5" },
 ]
 
 [package.metadata.requires-dev]
