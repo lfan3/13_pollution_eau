@@ -34,13 +34,13 @@ jobs:
     - name: Install dependencies
       run: uv sync 
 
-    # - name: Download production database from Storage
-    #   run: |
-    #     uv run pipelines/run.py run download_database
+    - name: Download production database from Storage
+      run: |
+        uv run pipelines/run.py run download_database
 
-    # - name: Update production database
-    #   run: |
-    #     uv run pipelines/run.py run build_database --refresh-type all --check-update
+    - name: Update production database
+      run: |
+        uv run pipelines/run.py run build_database --refresh-type all --check-update
 
     - name: Install dbt dependencies
       run: |
@@ -55,7 +55,7 @@ jobs:
     - name: Test the data quality in dbt
       run: |
         cd dbt_
-        uv run dbt test || || { echo "dbt test failed"; exit 1; }
+        uv run dbt test || { echo "dbt test failed"; exit 1; }
     
     - name: Seed data in dbt
       run: |
