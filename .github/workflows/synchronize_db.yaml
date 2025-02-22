@@ -14,7 +14,7 @@ on:
         default: 'Mise à jour manuelle de la base de données'
 
 env:
-  ENV: prod
+  ENV: dev
   SCW_ACCESS_KEY: ${{ secrets.SCW_ACCESS_KEY }}
   SCW_SECRET_KEY: ${{ secrets.SCW_SECRET_KEY }}
 
@@ -44,7 +44,7 @@ jobs:
 
     - name: Change direction to dbt folder
       run: cd dbt
-      
+
     - name: Install dbt dependencies
       run: uv run dbt deps
     
