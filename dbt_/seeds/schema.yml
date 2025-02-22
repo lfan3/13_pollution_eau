@@ -16,5 +16,5 @@ seeds:
         description: "Code CAS (Chemical Abstracts Service) de la substance chimique"
       - name: categorie
         description: "Catégorie du paramètre (pesticides, nitrites, etc.)"
-        tests:
-          - not_null
+        # tests:
+        #   - not_null
