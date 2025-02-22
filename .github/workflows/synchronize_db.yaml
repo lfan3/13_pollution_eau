@@ -60,11 +60,12 @@ jobs:
     - name: Seed data in dbt
       run: |
         cd dbt_
-        uv run dbt seed
+        uv run dbt seed || { echo "dbt seed failed"; exit 1; }
 
     - name: Upload production database to Storage
       run: |
         uv run pipelines/run.py run upload_database
+      if: success()
 
     - name: Create Issue if Failed
       if: failure()
