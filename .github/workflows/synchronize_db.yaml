@@ -42,26 +42,25 @@ jobs:
     #   run: |
     #     uv run pipelines/run.py run build_database --refresh-type all --check-update
 
-    - name: Show --folder
-      run: ls -l
-
-    - name: Change direction to dbt_ folder
-      run: cd dbt_
-
-    - name: Show --folder2
-      run: ls -l
-
     - name: Install dbt dependencies
-      run: uv run dbt deps || { echo "dbt deps failed"; exit 1; }
+      run: |
+        cd dbt_
+        uv run dbt deps || { echo "dbt deps failed"; exit 1; }
     
     - name: Create tables/views in dbt
-      run: uv run dbt run || { echo "dbt run failed"; exit 1; }
+      run: |
+        cd dbt_
+        uv run dbt run || { echo "dbt run failed"; exit 1; }
 
     - name: Test the data quality in dbt
-      run: uv run dbt test || || { echo "dbt test failed"; exit 1; }
+      run: |
+        cd dbt_
+        uv run dbt test || || { echo "dbt test failed"; exit 1; }
     
     - name: Seed data in dbt
-      run: uv run dbt seed
+      run: |
+        cd dbt_
+        uv run dbt seed
 
     - name: Upload production database to Storage
       run: |
