@@ -42,8 +42,11 @@ jobs:
       run: |
         uv run pipelines/run.py run build_database --refresh-type all --check-update
 
+    - name: Show --folder
+      run: ls -al
+      
     - name: Change direction to dbt folder
-      run: cd dbt
+      run: cd dbt_
 
     - name: Install dbt dependencies
       run: uv run dbt deps
