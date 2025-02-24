@@ -50,22 +50,11 @@ jobs:
     - name: Create tables/views in dbt
       run: |
         cd dbt_
-        uv run dbt run || { echo "dbt run failed"; exit 1; }
+        uv run dbt build || { echo "dbt build failed"; exit 1; }
 
-    - name: Seed data in dbt
-      run: |
-        cd dbt_
-        uv run dbt seed || { echo "dbt seed failed"; exit 1; }
-    
-    - name: Test the data quality in dbt
-      run: |
-        cd dbt_
-        uv run dbt test || { echo "dbt test failed"; exit 1; }
-    
     - name: Upload production database to Storage
       run: |
         uv run pipelines/run.py run upload_database
-      if: success()
 
     - name: Create Issue if Failed
       if: failure()
