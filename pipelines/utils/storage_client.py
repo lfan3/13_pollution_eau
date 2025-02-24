@@ -1,10 +1,11 @@
 import os
+import io
 import boto3
 from botocore.client import Config
 from botocore.exceptions import ClientError
 import pandas as pd
-import io
 import logging
+from tqdm import tqdm
 
 """Client class to interact with Scaleway Object Storage."""
 
@@ -47,12 +48,24 @@ class ObjectStorageClient:
      
 
     def download_object(self, file_key, local_path):
+        # Get file size
         try:
-            self.client_v4.download_file(self.bucket_name, file_key, local_path)
+            meta_data = self.client_v4.head_object(Bucket=self.bucket_name, Key=file_key)
+            total_length = int(meta_data.get("ContentLength", 0))
+
+            # Configure the callback to update the progress bar
+            with tqdm(
+                total=total_length, unit="iB", unit_scale=True, desc=file_key
+            ) as pbar:
+                self.client_v4.download_file(
+                    self.bucket_name,
+                    file_key,
+                    local_path,
+                    Callback=lambda bytes_transferred: pbar.update(bytes_transferred),
+                )
         except ClientError as e:
-            logger.error("Error download_object '%s' from bucket '%s': %s", file_key, self.bucket_name, e)
- 
-            
+            logger.error("Error deleting object '%s' from S3 bucket '%s': %s", file_key, self.bucket_name, e)
+
 
     def upload_object(self, local_path, file_key=None, public_read=False):
         if file_key is None:
@@ -66,7 +79,6 @@ class ObjectStorageClient:
             )
         except ClientError as e:
             logger.error("Error upload_object '%s' to bucket '%s': %s", local_path, self.bucket_name, e)
-
 
     def upload_dataframe(self, df, file_key):
         csv_buffer = io.StringIO()
